@@ -22,3 +22,7 @@ runs/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Generated detection result images
+static/results/*
+!static/results/.gitkeep
