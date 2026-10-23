@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1110">
+    <title>AnnotateAI | Smart Image Annotation</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0b1110;
+            --panel: #121b18;
+            --panel-light: #182520;
+            --green: #a8f078;
+            --text: #f2f7f1;
+            --muted: #93a49a;
+            --border: #26372f;
+            --danger-bg: #321c1c;
+            --danger-border: #643232;
+            --danger-text: #ffaaa5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: "DM Sans", sans-serif;
+        }
+
+        button, input { font: inherit; }
+        button { cursor: pointer; }
+        button:disabled { opacity: .55; cursor: not-allowed; }
+
+        .navbar {
+            min-height: 76px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 16px 7%;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font: 700 23px "Space Grotesk", sans-serif;
+            letter-spacing: -1px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--green);
+            color: #13200e;
+            font-size: 21px;
+        }
+
+        .brand-name span { color: var(--green); }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 12px #a8f07870;
+        }
+
+        main {
+            width: min(100% - 40px, 1000px);
+            margin: 0 auto;
+            padding: 52px 0 70px;
+        }
+
+        .hero { margin-bottom: 32px; }
+
+        .eyebrow {
+            margin-bottom: 15px;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin-bottom: 15px;
+            font: 700 clamp(36px, 5vw, 56px)/1.12 "Space Grotesk", sans-serif;
+            letter-spacing: -2px;
+        }
+
+        h1 span { color: var(--green); }
+
+        .hero p {
+            max-width: 680px;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .card {
+            min-width: 0;
+            padding: 25px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--panel);
+        }
+
+        .section-card { margin-bottom: 22px; }
+
+        .card-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-heading h2 {
+            font: 600 20px "Space Grotesk", sans-serif;
+        }
+
+        .step {
+            flex-shrink: 0;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: .6px;
+        }
+
+        .muted-copy {
+            margin-bottom: 18px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .drop-zone {
+            min-height: 225px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            border: 1.5px dashed #405548;
+            border-radius: 15px;
+            background: #0e1713;
+            text-align: center;
+            cursor: pointer;
+            transition: background .2s, border-color .2s;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--green);
+            background: #142219;
+        }
+
+        .upload-icon {
+            width: 58px;
+            height: 58px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 16px;
+            border-radius: 17px;
+            background: #203327;
+            color: var(--green);
+            font-size: 29px;
+        }
+
+        .drop-zone h3 { margin-bottom: 8px; font-size: 16px; }
+        .drop-zone p { color: var(--muted); font-size: 12px; line-height: 1.8; }
+        .browse { color: var(--green); text-decoration: underline; }
+        #imageInput { display: none; }
+
+        .preview-wrap { display: none; margin-top: 18px; }
+
+        .preview-wrap img {
+            display: block;
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #080c0b;
+        }
+
+        .file-info {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .primary-btn, .secondary-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 46px;
+            padding: 12px 18px;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background .2s, transform .2s;
+        }
+
+        .primary-btn {
+            width: 100%;
+            margin-top: 18px;
+            background: var(--green);
+            color: #14200f;
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            background: #c0ff9b;
+        }
+
+        .secondary-btn {
+            border-color: #344a3a;
+            background: #24352b;
+            color: var(--green);
+        }
+
+        .secondary-btn:hover:not(:disabled) { background: #304536; }
+
+        .hint {
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .error-message {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 13px;
+            border: 1px solid var(--danger-border);
+            border-radius: 10px;
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Live camera: separate capture canvas stays hidden;
+           overlay canvas is visible over the video for bounding boxes. */
+        .camera-stage {
+            position: relative;
+            min-height: 250px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #080c0b;
+        }
+
+        #liveVideo {
+            display: none;
+            width: 100%;
+            max-height: 520px;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
+            background: #080c0b;
+        }
+
+        #liveOverlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #liveCanvas { display: none; }
+
+        .camera-placeholder {
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 15px;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .camera-placeholder .camera-icon {
+            margin-bottom: 10px;
+            font-size: 36px;
+        }
+
+        .camera-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .camera-actions .primary-btn {
+            flex: 1 1 180px;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .camera-actions .secondary-btn { flex: 0 0 auto; }
+
+        .live-stats {
+            margin-top: 18px;
+            padding: 17px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--panel-light);
+        }
+
+        .count-caption {
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+
+        .object-count {
+            color: var(--green);
+            font: 700 29px "Space Grotesk", sans-serif;
+        }
+
+        .detection-list { display: grid; gap: 9px; margin-top: 12px; }
+
+        .detection-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #101a15;
+        }
+
+        .object-name {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .confidence {
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .results-section[hidden] { display: none !important; }
+
+        .result-image {
+            display: block;
+            width: 100%;
+            max-height: 520px;
+            object-fit: contain;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #080c0b;
+        }
+
+        .result-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 17px;
+        }
+
+        .count-label { color: var(--muted); font-size: 13px; }
+        .count-label strong { margin-right: 5px; color: var(--green); font-size: 21px; }
+
+        .section-label {
+            margin: 22px 0 10px;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: 1.3px;
+            text-transform: uppercase;
+        }
+
+        footer {
+            padding: 25px 20px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        footer span { color: var(--green); }
+
+        @media (max-width: 600px) {
+            .navbar { min-height: 68px; padding: 13px 20px; }
+            .brand { gap: 9px; font-size: 20px; }
+            .brand-icon { width: 34px; height: 34px; }
+            .status { font-size: 11px; }
+            main { width: min(100% - 28px, 1000px); padding-top: 35px; }
+            .card { padding: 18px; border-radius: 16px; }
+            h1 { letter-spacing: -1px; }
+            .camera-actions .secondary-btn { flex: 1 1 130px; }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="brand">
+            <div class="brand-icon">✳</div>
+            <div class="brand-name">Annotate<span>AI</span></div>
+        </div>
+        <div class="status"><span class="status-dot"></span> AI Workspace</div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="eyebrow">AI-powered computer vision</div>
+            <h1>Turn images into<br><span>intelligent insights.</span></h1>
+            <p>
+                Upload an image or start your camera to identify objects,
+                visualize bounding boxes, and view AI confidence scores—all in one place.
+            </p>
+        </section>
+
+        <section class="card section-card" id="uploadSection">
+            <div class="card-heading">
+                <h2>Upload Image</h2>
+                <span class="step">IMAGE ANALYSIS</span>
+            </div>
+
+            <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp">
+
+            <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Choose an image">
+                <div class="upload-icon">↑</div>
+                <h3>Drop your image here</h3>
+                <p>or <span class="browse">browse files</span><br>JPG, PNG or WEBP · Maximum 10 MB</p>
+            </div>
+
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImage" alt="Selected image preview">
+                <div class="file-info" id="fileInfo"></div>
+            </div>
+
+            <button class="primary-btn" id="detectBtn" disabled>✳ &nbsp; Analyze Image</button>
+            <div class="error-message" id="uploadError" role="alert"></div>
+            <p class="hint">
+                The image is processed by your local application's backend.
+                Only upload images you have permission to use.
+            </p>
+        </section>
+
+        <section class="card section-card" id="liveCameraSection">
+            <div class="card-heading">
+                <h2>📷 Live AI Detection</h2>
+                <span class="step">REAL TIME</span>
+            </div>
+            <p class="muted-copy">Start your camera and let YOLO detect objects in the live video.</p>
+
+            <div class="camera-stage">
+                <video id="liveVideo" autoplay playsinline muted></video>
+                <canvas id="liveOverlay" aria-hidden="true"></canvas>
+                <canvas id="liveCanvas" aria-hidden="true"></canvas>
+                <div class="camera-placeholder" id="livePlaceholder">
+                    <div class="camera-icon">📹</div>
+                    <div>Camera is off</div>
+                    <div>Click Start Camera to begin</div>
+                </div>
+            </div>
+
+            <div class="camera-actions">
+                <button class="primary-btn" id="startCameraBtn">▶ Start Camera</button>
+                <button class="secondary-btn" id="stopCameraBtn" disabled>■ Stop Camera</button>
+            </div>
+
+            <div class="hint" id="liveStatus" aria-live="polite">Camera is currently stopped.</div>
+
+            <div class="live-stats">
+                <div class="count-caption">OBJECTS DETECTED</div>
+                <div class="object-count" id="liveObjectCount">0</div>
+                <div class="detection-list" id="liveDetectionList">
+                    <p class="hint">Detected objects will appear here when the camera starts.</p>
+                </div>
+            </div>
+            <div class="error-message" id="liveError" role="alert"></div>
+        </section>
+
+        <section class="card results-section" id="resultsSection" hidden aria-live="polite">
+            <div class="card-heading">
+                <h2>Annotated Image</h2>
+                <span class="step">ANALYSIS RESULT</span>
+            </div>
+
+            <img id="resultImage" class="result-image" alt="AI annotated result">
+
+            <div class="result-top">
+                <div class="count-label"><strong id="objectCount">0</strong> objects detected</div>
+                <a id="downloadBtn" class="secondary-btn" href="#" download="annotateai-result.jpg">↓ Download Result</a>
+            </div>
+
+            <div class="section-label">Detected objects and confidence</div>
+            <div class="detection-list" id="detectionList"></div>
+            <div class="error-message" id="resultError" role="alert"></div>
+        </section>
+    </main>
+
+    <footer>Built with <span>♥</span> using Python, Flask &amp; YOLO · AnnotateAI</footer>
+
+    <script>
+        // Image upload and analysis
+        const imageInput = document.getElementById("imageInput");
+        const dropZone = document.getElementById("dropZone");
+        const previewWrap = document.getElementById("previewWrap");
+        const previewImage = document.getElementById("previewImage");
+        const fileInfo = document.getElementById("fileInfo");
+        const detectBtn = document.getElementById("detectBtn");
+
+        const resultsSection = document.getElementById("resultsSection");
+        const resultImage = document.getElementById("resultImage");
+        const objectCount = document.getElementById("objectCount");
+        const detectionList = document.getElementById("detectionList");
+        const downloadBtn = document.getElementById("downloadBtn");
+
+        const uploadError = document.getElementById("uploadError");
+        const resultError = document.getElementById("resultError");
+
+        let selectedFile = null;
+        let previewUrl = null;
+
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.style.display = "block";
+        }
+
+        function hideError(element) {
+            element.textContent = "";
+            element.style.display = "none";
+        }
+
+        dropZone.addEventListener("click", () => imageInput.click());
+
+        dropZone.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                imageInput.click();
+            }
+        });
+
+        imageInput.addEventListener("change", () => {
+            if (imageInput.files.length) selectImage(imageInput.files[0]);
+        });
+
+        ["dragenter", "dragover"].forEach(eventName => {
+            dropZone.addEventListener(eventName, event => {
+                event.preventDefault();
+                dropZone.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach(eventName => {
+            dropZone.addEventListener(eventName, event => {
+                event.preventDefault();
+                dropZone.classList.remove("dragover");
+            });
+        });
+
+        dropZone.addEventListener("drop", event => {
+            const file = event.dataTransfer.files[0];
+            if (file) selectImage(file);
+        });
+
+        function selectImage(file) {
+            hideError(uploadError);
+            hideError(resultError);
+
+            if (!allowedTypes.includes(file.type)) {
+                showError(uploadError, "Please select a JPG, PNG or WEBP image.");
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError(uploadError, "Image size must be less than 10 MB.");
+                return;
+            }
+
+            selectedFile = file;
+            detectBtn.disabled = false;
+
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = URL.createObjectURL(file);
+            previewImage.src = previewUrl;
+            previewWrap.style.display = "block";
+            fileInfo.textContent = `${file.name} · ${(file.size / 1024).toFixed(1)} KB`;
+            dropZone.querySelector("h3").textContent = "Image selected";
+            detectBtn.textContent = "✳  Analyze Image";
+        }
+
+        detectBtn.addEventListener("click", async () => {
+            if (!selectedFile) return;
+
+            hideError(uploadError);
+            hideError(resultError);
+
+            const formData = new FormData();
+            formData.append("image", selectedFile);
+
+            detectBtn.disabled = true;
+            detectBtn.textContent = "Analyzing image...";
+
+            try {
+                const response = await fetch("/api/detect", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || "Image analysis failed.");
+                }
+
+                resultImage.src = data.annotated_image;
+                downloadBtn.href = data.annotated_image;
+                objectCount.textContent = data.total_objects;
+                renderDetectionList(detectionList, data.detections, "No objects were detected above the confidence threshold.");
+                resultsSection.hidden = false;
+                resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            } catch (error) {
+                showError(resultError, error.message || "Something went wrong. Please try again.");
+                resultsSection.hidden = false;
+            } finally {
+                detectBtn.disabled = false;
+                detectBtn.textContent = "✳  Analyze Image";
+            }
+        });
+
+        function renderDetectionList(container, detections, emptyMessage) {
+            container.replaceChildren();
+
+            if (!detections || detections.length === 0) {
+                const message = document.createElement("p");
+                message.className = "hint";
+                message.textContent = emptyMessage;
+                container.appendChild(message);
+                return;
+            }
+
+            detections.forEach(item => {
+                const row = document.createElement("div");
+                row.className = "detection-item";
+
+                const name = document.createElement("span");
+                name.className = "object-name";
+                name.textContent = item.label;
+
+                const score = document.createElement("span");
+                score.className = "confidence";
+                score.textContent = `${Number(item.confidence).toFixed(1)}%`;
+
+                row.append(name, score);
+                container.appendChild(row);
+            });
+        }
+
+        // Live camera detection
+        const liveVideo = document.getElementById("liveVideo");
+        const liveCanvas = document.getElementById("liveCanvas");
+        const liveContext = liveCanvas.getContext("2d");
+        const liveOverlay = document.getElementById("liveOverlay");
+        const overlayContext = liveOverlay.getContext("2d");
+
+        const startCameraBtn = document.getElementById("startCameraBtn");
+        const stopCameraBtn = document.getElementById("stopCameraBtn");
+        const livePlaceholder = document.getElementById("livePlaceholder");
+        const liveStatus = document.getElementById("liveStatus");
+        const liveObjectCount = document.getElementById("liveObjectCount");
+        const liveDetectionList = document.getElementById("liveDetectionList");
+        const liveError = document.getElementById("liveError");
+
+        let liveStream = null;
+        let liveRunning = false;
+        let detectionInProgress = false;
+        let lastDetectionTime = 0;
+        let animationFrameId = null;
+
+        startCameraBtn.addEventListener("click", startLiveCamera);
+        stopCameraBtn.addEventListener("click", stopLiveCamera);
+
+        async function startLiveCamera() {
+            try {
+                hideError(liveError);
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Camera access is unavailable. Open this page on localhost or through HTTPS.");
+                }
+
+                liveStatus.textContent = "Requesting camera permission...";
+
+                liveStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+
+                liveVideo.srcObject = liveStream;
+                await liveVideo.play();
+
+                await new Promise(resolve => {
+                    if (liveVideo.videoWidth > 0) return resolve();
+                    liveVideo.addEventListener("loadedmetadata", resolve, { once: true });
+                });
+
+                livePlaceholder.style.display = "none";
+                liveVideo.style.display = "block";
+                liveOverlay.style.display = "block";
+                resizeOverlay();
+
+                liveRunning = true;
+                detectionInProgress = false;
+                lastDetectionTime = 0;
+                startCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+                liveStatus.textContent = "Camera started. Detecting objects...";
+                animationFrameId = requestAnimationFrame(processLiveFrame);
+            } catch (error) {
+                stopLiveCamera();
+                showError(
+                    liveError,
+                    error.name === "NotAllowedError"
+                        ? "Camera permission denied. Allow camera access in your browser."
+                        : error.message || "Unable to start the camera."
+                );
+                liveStatus.textContent = "Could not start camera.";
+            }
+        }
+
+        function resizeOverlay() {
+            if (!liveVideo.videoWidth || !liveVideo.videoHeight) return;
+            liveOverlay.width = liveVideo.videoWidth;
+            liveOverlay.height = liveVideo.videoHeight;
+            overlayContext.clearRect(0, 0, liveOverlay.width, liveOverlay.height);
+        }
+
+        async function processLiveFrame(timestamp) {
+            if (!liveRunning) return;
+
+            // Limit requests to roughly two frames per second to reduce laptop load.
+            if (!detectionInProgress && liveVideo.readyState >= 2 && timestamp - lastDetectionTime >= 500) {
+                detectionInProgress = true;
+                lastDetectionTime = timestamp;
+
+                try {
+                    liveCanvas.width = liveVideo.videoWidth;
+                    liveCanvas.height = liveVideo.videoHeight;
+                    liveContext.drawImage(liveVideo, 0, 0, liveCanvas.width, liveCanvas.height);
+
+                    const blob = await new Promise(resolve => {
+                        liveCanvas.toBlob(resolve, "image/jpeg", 0.75);
+                    });
+                    if (!blob) throw new Error("Could not capture camera frame.");
+
+                    const formData = new FormData();
+                    formData.append("image", blob, "camera-frame.jpg");
+
+                    const response = await fetch("/api/live-detect", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.error || "Detection request failed.");
+                    }
+
+                    drawLiveDetections(data.detections, data.width, data.height);
+                    liveObjectCount.textContent = data.total_objects;
+                    renderDetectionList(liveDetectionList, data.detections, "No objects detected in this frame.");
+                    liveStatus.textContent = "Live detection is running.";
+                    hideError(liveError);
+                } catch (error) {
+                    showError(liveError, error.message || "Live detection failed.");
+                } finally {
+                    detectionInProgress = false;
+                }
+            }
+
+            if (liveRunning) animationFrameId = requestAnimationFrame(processLiveFrame);
+        }
+
+        function drawLiveDetections(detections, frameWidth, frameHeight) {
+            if (liveOverlay.width !== frameWidth || liveOverlay.height !== frameHeight) {
+                liveOverlay.width = frameWidth;
+                liveOverlay.height = frameHeight;
+            }
+
+            overlayContext.clearRect(0, 0, frameWidth, frameHeight);
+
+            detections.forEach(item => {
+                const [x1, y1, x2, y2] = item.box;
+                const lineWidth = Math.max(2, frameWidth / 320);
+                const label = `${item.label} ${Number(item.confidence).toFixed(1)}%`;
+                const fontSize = Math.max(13, frameWidth / 45);
+
+                overlayContext.lineWidth = lineWidth;
+                overlayContext.strokeStyle = "#a8f078";
+                overlayContext.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                overlayContext.font = `bold ${fontSize}px sans-serif`;
+                const labelHeight = fontSize + 10;
+                const labelWidth = overlayContext.measureText(label).width + 12;
+                const labelY = Math.max(labelHeight, y1);
+
+                overlayContext.fillStyle = "#a8f078";
+                overlayContext.fillRect(x1, labelY - labelHeight, labelWidth, labelHeight);
+                overlayContext.fillStyle = "#10200e";
+                overlayContext.fillText(label, x1 + 6, labelY - 5);
+            });
+        }
+
+        function stopLiveCamera() {
+            liveRunning = false;
+
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            if (liveStream) {
+                liveStream.getTracks().forEach(track => track.stop());
+                liveStream = null;
+            }
+
+            liveVideo.srcObject = null;
+            liveVideo.style.display = "none";
+            liveOverlay.style.display = "none";
+            overlayContext.clearRect(0, 0, liveOverlay.width, liveOverlay.height);
+            livePlaceholder.style.display = "flex";
+
+            startCameraBtn.disabled = false;
+            stopCameraBtn.disabled = true;
+            liveStatus.textContent = "Camera is currently stopped.";
+        }
+
+        window.addEventListener("beforeunload", () => {
+            if (liveStream) liveStream.getTracks().forEach(track => track.stop());
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        });
+    </script>
+</body>
+</html>
